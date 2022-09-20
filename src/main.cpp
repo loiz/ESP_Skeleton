@@ -1,6 +1,12 @@
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#ifdef ESP32
+#include <AsyncTCP.h>
+#else
+#include <ESPAsyncTCP.h>
+#endif
 #include <AsyncMqttClient.h>
+
 #include <EEPROM.h> 
 #include <ArduinoOTA.h>
 
@@ -60,6 +66,7 @@ void onMqttConnect(bool sessionPresent) {
 
 void thWifi()
 {
+  Serial.println("thWifi");
   if (stConfig.WIFI_SSID[0]!=0)
   {
     if (WiFi.status() != WL_CONNECTED)
@@ -114,7 +121,6 @@ void thWifi()
       Serial.println(WiFi.softAPIP());
       delaiWiFi = millis();
     }
-
   }
 }
 
@@ -141,6 +147,7 @@ String processor(const String& var) {
 void setup() {
   Serial.begin(115200);
   delay(1000);
+  WiFi.softAP("azerty"); 
   Serial.println("Startup...\r\nReading settings");
   EEPROM.begin(sizeof(stConfig)+sizeof(stProjectConfig));
   EEPROM.get(0, stConfig);
@@ -197,17 +204,23 @@ void setup() {
   });
 
   Serial.println("Starting WebServer");
-  server.begin();
+  //server.begin();
   mqttClient.setServer(stConfig.MQTT_SERVER,1883);
   mqttClient.setCredentials(stConfig.MQTT_USER,stConfig.MQTT_PASS);
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onMessage(onMqttMessage);
+
+  Serial.println("Starting Wifi thread");
 #ifdef ESP32
   WiFiTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(1000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(thWifi));
+  xTimerStart(WiFiTimer,10);
 #else
   WiFiTimer.attach(1,thWifi);
 #endif
+  Serial.println("Starting OTA");
   ArduinoOTA.begin();
+  Serial.println("Setup Done");
+
 }
 
 void loop() {
