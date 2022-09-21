@@ -66,7 +66,6 @@ void onMqttConnect(bool sessionPresent) {
 
 void thWifi()
 {
-  Serial.println("thWifi");
   if (stConfig.WIFI_SSID[0]!=0)
   {
     if (WiFi.status() != WL_CONNECTED)
@@ -204,7 +203,7 @@ void setup() {
   });
 
   Serial.println("Starting WebServer");
-  //server.begin();
+  server.begin();
   mqttClient.setServer(stConfig.MQTT_SERVER,1883);
   mqttClient.setCredentials(stConfig.MQTT_USER,stConfig.MQTT_PASS);
   mqttClient.onConnect(onMqttConnect);
@@ -212,7 +211,7 @@ void setup() {
 
   Serial.println("Starting Wifi thread");
 #ifdef ESP32
-  WiFiTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(1000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(thWifi));
+  WiFiTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(1000), pdTRUE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(thWifi));
   xTimerStart(WiFiTimer,10);
 #else
   WiFiTimer.attach(1,thWifi);
@@ -220,7 +219,6 @@ void setup() {
   Serial.println("Starting OTA");
   ArduinoOTA.begin();
   Serial.println("Setup Done");
-
 }
 
 void loop() {
